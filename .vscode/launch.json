@@ -1,0 +1,31 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "FastAPI: Debug",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": [
+        "main:app",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "8000",
+        "--reload"
+      ],
+      "jinja": true,
+      "justMyCode": true,
+      "python": "${workspaceFolder}/venv/bin/python"
+    },
+    {
+      "name": "Python",
+      "type": "debugpy",
+      "request": "launch",
+      "python": "${workspaceFolder}/venv/bin/python",
+      "program": "${workspaceFolder}/main.py",
+      "justMyCode": true,
+      "console": "integratedTerminal"
+    }
+  ]
+}
