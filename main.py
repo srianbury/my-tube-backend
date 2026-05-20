@@ -1,5 +1,7 @@
 import asyncio
 import os
+import logging
+import sys
 import xml.etree.ElementTree as ET
 
 import httpx
@@ -101,6 +103,14 @@ class Video(BaseModel):
         )
 
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)],
+)
+
+logger = logging.getLogger(__name__)
+
 load_dotenv()
 
 app = FastAPI()
@@ -139,24 +149,32 @@ async def get_feed() -> List[Video]:
             feed, key=lambda v: (-v.published.timestamp(), v.author.name, v.video_id)
         )
     except Exception as e:
-        print(e)
+        logger.info(e)
         return []
 
 
 async def get_videos(id: str, q: str | None = None) -> List[Video]:
     try:
+        logger.info(f"Getting {id}")
+        result_sor = "CACHE"
         if (
             id not in channel_videos_cache
             or datetime.now() >= channel_videos_cache[id].ttl
         ):
+            result_sor = "HTTP"
+            logger.info(f"Sending HTTP request {id}")
             response = httpx.get(
                 f"https://www.youtube.com/feeds/videos.xml?channel_id={id}"
             )
+
+            if response.status_code != 200:
+                raise Exception(f"{response.status_code} - Unsuccessful request.")
 
             channel_videos_cache[id] = Cache(
                 ttl=datetime.now() + timedelta(hours=24), value=response.text
             )
 
+        logger.info(f"Data sourced from {result_sor}")
         data = channel_videos_cache[id].value
         root = ET.fromstring(data)
         entries = root.findall("a:entry", namespaces)
@@ -167,7 +185,7 @@ async def get_videos(id: str, q: str | None = None) -> List[Video]:
                 videos.append(video)
         return videos
     except Exception as e:
-        print(e)
+        logger.info(e)
         return []
 
 
